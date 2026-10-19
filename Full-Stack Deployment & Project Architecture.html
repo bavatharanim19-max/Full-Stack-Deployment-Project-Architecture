@@ -1,0 +1,190 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="ShopEase modern e-commerce product catalog">
+<title>ShopEase | E-Commerce</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#f5f7f5;color:#20352b}
+header{background:#fff;padding:18px 7%;display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;box-shadow:0 2px 10px #0001;position:sticky;top:0;z-index:5}
+.logo{font-size:26px;font-weight:bold;color:#16845b}
+nav{display:flex;gap:18px;flex-wrap:wrap}
+nav a{color:#20352b;text-decoration:none;font-weight:bold}
+nav a:hover{color:#16845b}
+main{max-width:1150px;width:90%;margin:30px auto;min-height:70vh}
+.hero{background:#dff2e5;padding:45px;border-radius:20px;margin-bottom:30px}
+.hero h1{font-size:clamp(30px,5vw,48px);margin-bottom:12px}
+.hero p{color:#52675b;line-height:1.7}
+button,.btn{border:0;border-radius:8px;padding:12px 17px;background:#16845b;color:white;cursor:pointer;font-weight:bold;text-decoration:none;display:inline-block;margin-top:12px}
+button:hover,.btn:hover{background:#106744}
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}
+input,select{padding:12px;border:1px solid #ccd8ce;border-radius:8px;flex:1;min-width:160px;background:white}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.card{background:white;border-radius:14px;overflow:hidden;box-shadow:0 3px 12px #0000;border:1px solid #e1e9e2}
+.card img{width:100%;height:180px;object-fit:cover;display:block;background:#e8eee9}
+.info{padding:15px}
+.info h3{margin:8px 0}
+.category{font-size:12px;color:#16845b;font-weight:bold;text-transform:uppercase}
+.price{font-size:20px;font-weight:bold;margin-top:10px}
+.info button{width:100%}
+.panel{background:white;padding:24px;border-radius:14px;margin:15px 0}
+.cart-item{display:flex;align-items:center;gap:15px;border-bottom:1px solid #eee;padding:15px 0;flex-wrap:wrap}
+.cart-item img{width:75px;height:75px;object-fit:cover;border-radius:8px}
+.cart-item .details{flex:1}
+.empty{text-align:center;padding:50px;background:white;border-radius:14px}
+footer{text-align:center;padding:25px;background:white;color:#65736a;margin-top:30px}
+@media(max-width:850px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{padding:30px}}
+@media(max-width:500px){header{padding:15px 5%}nav{gap:12px;font-size:14px}.grid{grid-template-columns:1fr}.card img{height:230px}main{width:92%}}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="#/" style="text-decoration:none">ShopEase.</a>
+  <nav>
+    <a href="#/">Home</a>
+    <a href="#/products">Products</a>
+    <a href="#/about">About</a>
+    <a href="#/cart">Cart (<span id="count">0</span>)</a>
+  </nav>
+</header>
+
+<main id="app">Loading products...</main>
+<footer>© 2026 ShopEase | E-Commerce Capstone Project</footer>
+
+<script>
+"use strict";
+
+// Product module
+const products=[
+ {id:1,name:"Headphones",category:"Electronics",price:1499,img:"photo-1505740420928-5e560c06d30e"},
+ {id:2,name:"Smart Watch",category:"Electronics",price:2499,img:"photo-1523275335684-37898b6baf30"},
+ {id:3,name:"Running Shoes",category:"Fashion",price:1899,img:"photo-1542291026-7eec264c27ff"},
+ {id:4,name:"Backpack",category:"Accessories",price:899,img:"photo-1553062407-98eeb64c6a62"},
+ {id:5,name:"Camera",category:"Electronics",price:4999,img:"photo-1516035069371-29a1b244cc32"},
+ {id:6,name:"Sunglasses",category:"Fashion",price:599,img:"photo-1511499767150-a48a237f0083"},
+ {id:7,name:"Desk Lamp",category:"Home",price:699,img:"photo-1507473885765-e6ed057f782c"},
+ {id:8,name:"Coffee Mug",category:"Home",price:299,img:"photo-1514228742587-6b1558fcca3d"}
+];
+
+const app=document.getElementById("app");
+let search="",category="All",sort="default",cart=[];
+
+try{
+ const saved=JSON.parse(localStorage.getItem("shopease-cart")||"[]");
+ if(Array.isArray(saved)){
+  cart=saved.filter(i=>i&&products.some(p=>p.id===i.id)&&Number.isInteger(i.qty)&&i.qty>0&&i.qty<=99);
+ }
+}catch(error){cart=[]}
+
+const money=n=>"₹"+n.toLocaleString("en-IN");
+const image=id=>`https://images.unsplash.com/${id}?auto=format&fit=crop&w=500&q=70`;
+
+function saveCart(){
+ try{localStorage.setItem("shopease-cart",JSON.stringify(cart))}
+ catch(error){alert("Unable to save cart in this browser.")}
+ updateCount();
+}
+function updateCount(){
+ document.getElementById("count").textContent=cart.reduce((s,i)=>s+i.qty,0);
+}
+
+function card(p){
+ return `<article class="card">
+ <a href="#/product/${p.id}" aria-label="View ${p.name}">
+ <img src="${image(p.img)}" alt="${p.name}" loading="lazy" width="500" height="350"></a>
+ <div class="info"><span class="category">${p.category}</span>
+ <h3>${p.name}</h3><p class="price">${money(p.price)}</p>
+ <button data-add="${p.id}">Add to Cart</button></div></article>`;
+}
+function filtered(){
+ let list=products.filter(p=>
+  p.name.toLowerCase().includes(search.toLowerCase())&&
+  (category==="All"||p.category===category));
+ if(sort==="low")list.sort((a,b)=>a.price-b.price);
+ if(sort==="high")list.sort((a,b)=>b.price-a.price);
+ if(sort==="name")list.sort((a,b)=>a.name.localeCompare(b.name));
+ return list;
+}
+function grid(list){
+ return list.length?`<div class="grid">${list.map(card).join("")}</div>`
+ :`<div class="empty">No products found. Try another search.</div>`;
+}
+
+function home(){
+ app.innerHTML=`<section class="hero">
+ <h1>Discover Your Next Favourite Product</h1>
+ <p>Explore quality products for your everyday needs at great prices.</p>
+ <a class="btn" href="#/products">Shop Now →</a>
+ </section><h2>Featured Products</h2><br>${grid(products.slice(0,4))}`;
+}
+function catalog(){
+ app.innerHTML=`<h1>Product Catalog</h1>
+ <div class="toolbar">
+ <input id="search" placeholder="Search products..." value="${search.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;")}">
+ <select id="category">${["All",...new Set(products.map(p=>p.category))].map(c=>`<option ${c===category?"selected":""}>${c}</option>`).join("")}</select>
+ <select id="sort">
+ <option value="default">Sort products</option>
+ <option value="low" ${sort==="low"?"selected":""}>Price: Low to High</option>
+ <option value="high" ${sort==="high"?"selected":""}>Price: High to Low</option>
+ <option value="name" ${sort==="name"?"selected":""}>Name: A-Z</option>
+ </select></div><div id="results">${grid(filtered())}</div>`;
+}
+function showProduct(id){
+ const p=products.find(p=>p.id===Number(id));
+ app.innerHTML=p?`<div class="panel"><img src="${image(p.img)}" alt="${p.name}" width="300" height="250" style="max-width:100%;object-fit:contain"><h1>${p.name}</h1><p>${p.category}</p><p class="price">${money(p.price)}</p><button data-add="${p.id}">Add to Cart</button><br><a class="btn" href="#/products">Back to Products</a></div>`:`<div class="empty">Product not found <a href="#/products">Go back</a></div>`;
+}
+function showCart(){
+ if(!cart.length){app.innerHTML=`<div class="empty"><h1>Your cart is empty 🛒</h1><a class="btn" href="#/products">Explore Products</a></div>`;return}
+ let total=0;
+ app.innerHTML=`<h1>Shopping Cart</h1><div class="panel">${cart.map(i=>{
+  const p=products.find(p=>p.id===i.id);total+=p.price*i.qty;
+  return `<div class="cart-item"><img src="${image(p.img)}" alt="${p.name}"><div class="details"><h3>${p.name}</h3><p>${money(p.price)} × ${i.qty}</p><button data-change="${p.id}" data-delta="-1">−</button> <button data-change="${p.id}" data-delta="1">+</button> <button data-remove="${p.id}">Remove</button></div></div>`;
+ }).join("")}<h2>Total: ${money(total)}</h2><p>Demo checkout only. No real payment is processed.</p><button data-checkout>Checkout</button></div>`;
+}
+function router(){
+ const path=location.hash.slice(1)||"/";
+ if(path==="/")home();
+ else if(path==="/products")catalog();
+ else if(path==="/cart")showCart();
+ else if(path==="/about")app.innerHTML=`<div class="hero"><h1>About ShopEase</h1><p>A responsive e-commerce capstone demonstrating modular frontend design, routing, product search, cart management and optimized assets.</p></div>`;
+ else if(/^\/product\/\d+$/.test(path))showProduct(path.split("/")[2]);
+ else app.innerHTML=`<div class="empty"><h1>Page Not Found</h1><a class="btn" href="#/">Home</a></div>`;
+ updateCount();
+}
+window.addEventListener("hashchange",router);
+
+// Event delegation
+app.addEventListener("click",e=>{
+ const add=e.target.closest("[data-add]");
+ if(add){
+  const id=Number(add.dataset.add);
+  let item=cart.find(i=>i.id===id);
+  if(item){if(item.qty>=99){alert("Maximum quantity reached");return}item.qty++}
+  else cart.push({id,qty:1});
+  saveCart();add.textContent="Added ✓";return;
+ }
+ const change=e.target.closest("[data-change]");
+ if(change){
+  const item=cart.find(i=>i.id===Number(change.dataset.change));
+  if(item){item.qty+=Number(change.dataset.delta);if(item.qty<=0)cart=cart.filter(i=>i!==item);saveCart();router()}
+ }
+ const remove=e.target.closest("[data-remove]");
+ if(remove){cart=cart.filter(i=>i.id!==Number(remove.dataset.remove));saveCart();router()}
+ if(e.target.closest("[data-checkout]"))alert("Demo checkout only. No real order placed.");
+});
+
+app.addEventListener("input",e=>{
+ if(e.target.id==="search"){search=e.target.value;const results=document.getElementById("results");if(results)results.innerHTML=grid(filtered())}
+});
+app.addEventListener("change",e=>{
+ if(e.target.id==="category"){category=e.target.value;document.getElementById("results").innerHTML=grid(filtered())}
+ if(e.target.id==="sort"){sort=e.target.value;document.getElementById("results").innerHTML=grid(filtered())}
+});
+
+router();
+</script>
+</body>
+</html>
